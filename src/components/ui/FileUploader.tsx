@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { useState, useRef } from "react";
 import { Upload, File, X, CheckCircle2, Loader2 } from "lucide-react";
-import { Id } from "../../../../convex/_generated/dataModel";
+import { Id } from "../../../convex/_generated/dataModel";
 
 interface FileUploaderProps {
   onUploadComplete: (storageId: Id<"_storage">) => void;
