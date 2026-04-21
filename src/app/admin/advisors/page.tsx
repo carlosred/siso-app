@@ -13,7 +13,13 @@ export default function AdminAdvisorsPage() {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPerformanceModalOpen, setIsPerformanceModalOpen] = useState(false);
+  const [selectedAdvisorId, setSelectedAdvisorId] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  
+  const performanceMetrics = useQuery(api.activities.getAdvisorMetrics, 
+    isPerformanceModalOpen && selectedAdvisorId ? { advisorUserId: selectedAdvisorId } : "skip"
+  );
   
   const [formData, setFormData] = useState({
     nombre: "",
@@ -85,7 +91,13 @@ export default function AdminAdvisorsPage() {
                  <button className="flex-1 py-2 bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-100 transition-colors">
                    Editar
                  </button>
-                 <button className="flex-1 py-2 bg-blue-50 text-blue-600 text-sm font-semibold rounded-xl hover:bg-blue-100 transition-colors">
+                 <button 
+                   onClick={() => {
+                     setSelectedAdvisorId(advisor.userId);
+                     setIsPerformanceModalOpen(true);
+                   }}
+                   className="flex-1 py-2 bg-blue-50 text-blue-600 text-sm font-semibold rounded-xl hover:bg-blue-100 transition-colors"
+                 >
                    Ver Desempeño
                  </button>
               </div>
@@ -181,6 +193,50 @@ export default function AdminAdvisorsPage() {
             El asesor deberá registrarse en el portal con el <b>Correo Electrónico</b> proporcionado.
           </p>
         </form>
+      </Modal>
+
+      <Modal 
+        isOpen={isPerformanceModalOpen} 
+        onClose={() => setIsPerformanceModalOpen(false)} 
+        title="Desempeño del Asesor"
+      >
+        <div className="space-y-6">
+          {!performanceMetrics ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 text-center">
+                  <p className="text-sm text-slate-500 font-medium mb-1">Total Asignadas</p>
+                  <p className="text-3xl font-bold text-slate-900">{performanceMetrics.total}</p>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-3xl border border-blue-100 text-center">
+                  <p className="text-sm text-blue-600 font-medium mb-1">Completadas</p>
+                  <p className="text-3xl font-bold text-blue-700">{performanceMetrics.completed}</p>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-sm mb-3 px-1">
+                  <span className="font-bold text-slate-700">Progreso General</span>
+                  <span className="font-bold text-blue-600">{performanceMetrics.percentage}%</span>
+                </div>
+                <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 transition-all duration-1000 rounded-full" 
+                    style={{ width: `${performanceMetrics.percentage}%` }}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="pt-2 flex justify-end">
+             <button onClick={() => setIsPerformanceModalOpen(false)} className="px-6 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
+               Cerrar
+             </button>
+          </div>
+        </div>
       </Modal>
     </DashboardLayout>
   );

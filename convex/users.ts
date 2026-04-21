@@ -59,12 +59,24 @@ export const listAdvisors = query({
 });
 export const setRole = mutation({
   args: {
-    role: v.union(v.literal("admin"), v.literal("advisor"), v.literal("company")),
+    role: v.union(v.literal("admin"), v.literal("advisor"), v.literal("company"), v.literal("reset")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
-    await ctx.db.patch(userId, { role: args.role });
+    
+    const newRole = args.role === "reset" ? undefined : args.role;
+    await ctx.db.patch(userId, { role: newRole as any });
+    const user = await ctx.db.get(userId);
+
+    if (args.role === "company" && user?.email) {
+      // Find company with this email and link it to this user ID
+      const company = await ctx.db.query("companies").filter(q => q.eq(q.field("correo"), user.email)).unique();
+      if (company) await ctx.db.patch(company._id, { userId: userId });
+    } else if (args.role === "advisor" && user?.email) {
+      // Logic for advisors if needed later
+    }
+
     return { success: true };
   },
 });

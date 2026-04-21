@@ -4,36 +4,51 @@ import { v } from "convex/values";
 export const run = mutation({
   args: {},
   handler: async (ctx) => {
-    // 1. Setup Advisors
-    const advisor1 = await ctx.db.query("users").withIndex("email", q => q.eq("email", "asesor1@siso.com")).unique();
-    if (!advisor1) throw new Error("User asesor1@siso.com not found. Please sign up first.");
-    await ctx.db.patch(advisor1._id, { role: "advisor" });
-    const advisor1Id = advisor1._id;
+    const getOrCreateUser = async (email: string, role: string, name?: string) => {
+      let user = await ctx.db.query("users").withIndex("email", q => q.eq("email", email)).first();
+      if (!user) {
+        const id = await ctx.db.insert("users", { email, role: role as any, name });
+        return { _id: id, role };
+      }
+      await ctx.db.patch(user._id, { role: role as any });
+      return user;
+    };
 
-    const advisor2 = await ctx.db.query("users").withIndex("email", q => q.eq("email", "asesor2@siso.com")).unique();
-    if (!advisor2) throw new Error("User asesor2@siso.com not found. Please sign up first.");
-    await ctx.db.patch(advisor2._id, { role: "advisor" });
-    const advisor2Id = advisor2._id;
+    // 0. Clean up everything first to guarantee idempotency!
+    for (const table of ["companies", "assignments", "advisors", "activities"] as const) {
+      const items = await ctx.db.query(table).collect();
+      for (const item of items) {
+        await ctx.db.delete(item._id);
+      }
+    }
+
+    // 1. Setup Advisors
+    const advisor1UserId = (await getOrCreateUser("asesor1@siso.com", "advisor", "Asesor 1"))._id;
+    const advisor2UserId = (await getOrCreateUser("asesor2@siso.com", "advisor", "Asesor 2"))._id;
+
+    await ctx.db.insert("advisors", {
+      userId: advisor1UserId,
+      nombre: "Asesor",
+      apellido: "Uno",
+      cedula: "1111",
+      licencia: "L-1"
+    });
+    
+    await ctx.db.insert("advisors", {
+      userId: advisor2UserId,
+      nombre: "Asesor",
+      apellido: "Dos",
+      cedula: "2222",
+      licencia: "L-2"
+    });
 
     // 2. Setup Companies
-    const companyAUser = await ctx.db.query("users").withIndex("email", q => q.eq("email", "contacto@cafe-andino.com")).unique();
-    if (!companyAUser) throw new Error("User contacto@cafe-andino.com not found. Please sign up first.");
-    await ctx.db.patch(companyAUser._id, { role: "company" });
-    const companyAUserId = companyAUser._id;
-
-    const companyBUser = await ctx.db.query("users").withIndex("email", q => q.eq("email", "hr@textiles-pacifico.com")).unique();
-    if (!companyBUser) throw new Error("User hr@textiles-pacifico.com not found. Please sign up first.");
-    await ctx.db.patch(companyBUser._id, { role: "company" });
-    const companyBUserId = companyBUser._id;
-
-    const companyCUser = await ctx.db.query("users").withIndex("email", q => q.eq("email", "admin@mineria-norte.com")).unique();
-    if (!companyCUser) throw new Error("User admin@mineria-norte.com not found. Please sign up first.");
-    await ctx.db.patch(companyCUser._id, { role: "company" });
-    const companyCUserId = companyCUser._id;
+    const companyAUserId = (await getOrCreateUser("contacto@cafe-andino.com", "company", "Café Andino SAS"))._id;
+    const companyBUserId = (await getOrCreateUser("hr@textiles-pacifico.com", "company", "Textiles del Pacífico"))._id;
+    const companyCUserId = (await getOrCreateUser("admin@mineria-norte.com", "company", "Minería del Norte SA"))._id;
 
     // Admin
-    const adminUser = await ctx.db.query("users").withIndex("email", q => q.eq("email", "siso@test.com")).unique();
-    if (adminUser) await ctx.db.patch(adminUser._id, { role: "admin" });
+    await getOrCreateUser("siso@test.com", "admin", "Admin SISO");
     const companyAId = await ctx.db.insert("companies", {
       userId: companyAUserId,
       razon_social: "Café Andino SAS",
@@ -68,27 +83,30 @@ export const run = mutation({
 
     // 3. Assignments
     await ctx.db.insert("assignments", {
-      advisorId: advisor1Id,
+      advisorId: advisor1UserId,
       companyId: companyAId,
     });
     await ctx.db.insert("assignments", {
-      advisorId: advisor1Id,
+      advisorId: advisor1UserId,
       companyId: companyBId,
     });
     await ctx.db.insert("assignments", {
-      advisorId: advisor2Id,
+      advisorId: advisor2UserId,
       companyId: companyCId,
     });
 
-    // 4. Initial Evaluations for Company A (Group 7)
-    // 7 items: ids 7-1 to 7-7
-    const statuses: ("Cumple" | "No Cumple" | "No Aplica")[] = ["Cumple", "Cumple", "No Cumple", "No Aplica", "Cumple"];
-    for (let i = 1; i <= 5; i++) {
-        await ctx.db.insert("evaluations", {
+    // 4. Initial Activities for Company A
+    const statuses: ("Pendiente" | "Completada")[] = ["Pendiente", "Completada", "Pendiente"];
+    const activityNames = ["Capacitacion brigada", "Inspección extintores", "Revisión matriz legal"];
+    const locations = ["Planta Principal", "Oficinas Centrales", "Virtual"];
+    for (let i = 0; i < 3; i++) {
+        await ctx.db.insert("activities", {
             companyId: companyAId,
-            standardId: `7-${i}`,
-            status: statuses[i-1],
-            observation: `Evaluación inicial para ítem 7-${i}`,
+            name: activityNames[i],
+            status: statuses[i],
+            description: "Actividad generada de prueba obligatoria",
+            location: locations[i],
+            completedAt: statuses[i] === "Completada" ? Date.now() : undefined,
         });
     }
 

@@ -4,281 +4,186 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useParams } from "next/navigation";
-import { ALL_STANDARDS } from "@/constants/standards";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { 
-  ShieldCheck, 
-  Info, 
   CheckCircle, 
-  XCircle, 
-  MinusCircle, 
-  ChevronDown, 
-  ChevronUp,
-  FileText,
+  Clock, 
+  Loader2, 
   Save,
-  Loader2
+  FileText
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { FileUploader } from "@/components/ui/FileUploader";
 import { Id } from "../../../../../convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
 
-export default function AdvisorEvaluationPage() {
-  const { companyId } = useParams();
-  const company = useQuery(api.companies.getById, { id: companyId as Id<"companies"> });
-  const complianceData = useQuery(api.getCompliance, { companyId: companyId as Id<"companies"> });
-  const updateItem = useMutation(api.evaluations.updateItem);
+export default function CompanyActivitiesPage() {
+  const params = useParams();
+  const companyId = params.companyId as Id<"companies">;
   
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const assignments = useQuery(api.companies.list);
+  const company = assignments?.find(c => c._id === companyId);
+  const activities = useQuery(api.activities.getByCompany, { companyId });
+  const completeActivity = useMutation(api.activities.complete);
 
-  const standards = useMemo(() => {
-    if (!complianceData) return [];
-    return ALL_STANDARDS[complianceData.groupId as 7 | 21 | 60] || [];
-  }, [complianceData]);
+  // States per activity row
+  const [observations, setObservations] = useState<Record<string, string>>({});
+  const [fileIds, setFileIds] = useState<Record<string, Id<"_storage">>>({});
+  const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
 
-  const toggleExpand = (id: string) => {
-    setExpandedItems(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
+  if (!assignments || !activities) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  const handleStatusUpdate = async (standardId: string, status: "Cumple" | "No Cumple" | "No Aplica") => {
-    setSavingId(standardId);
+  if (!company) {
+    return (
+      <DashboardLayout>
+         <div className="py-20 text-center text-slate-500">
+           No tiene acceso a esta empresa.
+         </div>
+      </DashboardLayout>
+    );
+  }
+
+  const handleComplete = async (activityId: string) => {
+    const obs = observations[activityId] || "";
+    const fileId = fileIds[activityId];
+    
+    if (!fileId) {
+      alert("Para completar la actividad debe adjuntar la Evidencia (Subir Archivo).");
+      return;
+    }
+
+    setSubmitting(prev => ({ ...prev, [activityId]: true }));
     try {
-      await updateItem({
-        companyId: companyId as Id<"companies">,
-        standardId,
-        status,
+      await completeActivity({
+        activityId: activityId as Id<"activities">,
+        observations: obs,
+        fileStorageId: fileId
       });
+      alert("¡Actividad completada y enviada a la Empresa exitosamente!");
     } catch (err) {
       console.error(err);
+      alert("Ocurrió un error al intentar completar la actividad.");
     } finally {
-      setSavingId(null);
+      setSubmitting(prev => ({ ...prev, [activityId]: false }));
     }
   };
 
-  if (!company || !complianceData) {
-    return <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-    </div>;
-  }
-
-  const score = complianceData.percentage;
-  const scoreColor = score < 60 ? "text-red-600" : score < 85 ? "text-orange-500" : "text-green-600";
-  const scoreBg = score < 60 ? "bg-red-50" : score < 85 ? "bg-orange-50" : "bg-green-50";
-
   return (
     <DashboardLayout>
-      <div className="space-y-8 max-w-5xl mx-auto">
-        {/* Header Summary */}
-        <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-4">
-             <div className="p-4 bg-blue-50 rounded-2xl text-blue-600">
-                <ShieldCheck className="w-10 h-10" />
-             </div>
-             <div>
-                <h1 className="text-2xl font-bold text-slate-900">{company.razon_social}</h1>
-                <p className="text-slate-500">Evaluación de Estándares Mínimos (Grupo: {complianceData.groupId})</p>
-             </div>
-          </div>
-          
-          <div className={cn("px-8 py-4 rounded-3xl text-center border", scoreBg, scoreColor.replace('text', 'border'))}>
-             <p className="text-xs font-bold uppercase tracking-widest mb-1 opacity-70">Puntaje Actual</p>
-             <h2 className={cn("text-4xl font-black", scoreColor)}>{score.toFixed(1)}%</h2>
-             <p className="text-xs font-semibold mt-1">
-               {score < 60 ? "Crítico" : score < 85 ? "Moderadamente Aceptable" : "Aceptable"}
-             </p>
-          </div>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Actividades Asignadas</h1>
+          <p className="text-slate-500">
+             Gestione las actividades y capacitaciones de <b>{company.razon_social}</b>
+          </p>
         </div>
 
-        {/* Standards List */}
-        <div className="space-y-4">
-          {standards.map((item) => {
-            const evaluation = complianceData.evaluations.find(e => e.standardId === item.id);
-            const isExpanded = expandedItems.includes(item.id);
-            const isSaving = savingId === item.id;
+        {activities.length === 0 && (
+          <div className="bg-slate-50 p-12 rounded-3xl text-center border border-slate-100">
+            <h3 className="text-lg font-bold text-slate-800 mb-2">No hay actividades</h3>
+            <p className="text-slate-500">El Administrador aún no ha asignado ninguna actividad a esta empresa.</p>
+          </div>
+        )}
 
-            return (
-              <div key={item.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div className="flex-1 flex gap-4">
-                     <span className="text-slate-400 font-bold text-sm bg-slate-50 px-2 py-1 rounded h-fit">{item.numeral}</span>
-                     <div>
-                        <h4 className="font-bold text-slate-800 leading-tight">{item.descripcion}</h4>
-                        {evaluation && (
-                           <div className="flex items-center gap-2 mt-2">
-                             {evaluation.status === "Cumple" && <CheckCircle className="w-4 h-4 text-green-500" />}
-                             {evaluation.status === "No Cumple" && <XCircle className="w-4 h-4 text-red-500" />}
-                             {evaluation.status === "No Aplica" && <MinusCircle className="w-4 h-4 text-slate-400" />}
-                             <span className={cn(
-                               "text-xs font-bold",
-                               evaluation.status === "Cumple" ? "text-green-600" : 
-                               evaluation.status === "No Cumple" ? "text-red-600" : "text-slate-500"
-                             )}>{evaluation.status}</span>
-                           </div>
-                        )}
-                     </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button 
-                      onClick={() => handleStatusUpdate(item.id, "Cumple")}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-sm font-bold transition-all border",
-                        evaluation?.status === "Cumple" 
-                          ? "bg-green-600 border-green-600 text-white" 
-                          : "bg-white border-slate-200 text-slate-500 hover:border-green-300 hover:bg-green-50"
-                      )}
-                    >
-                      Cumple
-                    </button>
-                    <button 
-                      onClick={() => handleStatusUpdate(item.id, "No Cumple")}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-sm font-bold transition-all border",
-                        evaluation?.status === "No Cumple" 
-                          ? "bg-red-600 border-red-600 text-white" 
-                          : "bg-white border-slate-200 text-slate-500 hover:border-red-300 hover:bg-red-50"
-                      )}
-                    >
-                      No Cumple
-                    </button>
-                    <button 
-                      onClick={() => handleStatusUpdate(item.id, "No Aplica")}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-sm font-bold transition-all border",
-                        evaluation?.status === "No Aplica" 
-                          ? "bg-slate-700 border-slate-700 text-white" 
-                          : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
-                      )}
-                    >
-                      N/A
-                    </button>
-                    
-                    <button 
-                      onClick={() => toggleExpand(item.id)}
-                      className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-100 hover:text-slate-600 transition-all font-bold"
-                    >
-                      {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </button>
-                  </div>
+        <div className="grid grid-cols-1 gap-6">
+          {activities.map(activity => (
+            <div key={activity._id} className={cn(
+              "p-6 rounded-3xl border shadow-sm transition-all",
+              activity.status === "Completada" ? "bg-green-50/30 border-green-200" : "bg-white border-slate-200"
+            )}>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">{activity.name}</h3>
+                  {activity.description && (
+                    <div className="text-sm text-slate-600 mt-2 p-3 bg-slate-50 rounded-lg whitespace-pre-wrap leading-relaxed">{activity.description}</div>
+                  )}
+                  {activity.location && (
+                    <p className="text-sm font-semibold text-slate-700 mt-3 flex items-center gap-1">📍 {activity.location}</p>
+                  )}
                 </div>
-
-                {isExpanded && (
-                  <div className="px-6 pb-6 pt-2 border-t border-slate-50 bg-slate-50/30">
-                     <div className="grid md:grid-cols-2 gap-6">
-                        <div>
-                          {evaluation && 'fileUrl' in evaluation && evaluation.fileUrl && (
-                            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-2xl flex items-center justify-between">
-                               <div className="flex items-center gap-2 text-green-700">
-                                  <CheckCircle className="w-5 h-5" />
-                                  <span className="text-sm font-bold">Evidencia Cargada</span>
-                               </div>
-                               <a 
-                                 href={evaluation.fileUrl as string} 
-                                 target="_blank" 
-                                 rel="noopener noreferrer"
-                                 className="text-xs font-bold bg-white px-3 py-1.5 rounded-lg shadow-sm text-blue-600 hover:text-blue-700"
-                               >
-                                 Ver Archivo
-                               </a>
-                            </div>
-                          )}
-                          <FileUploader 
-                            label={evaluation && 'fileUrl' in evaluation && evaluation.fileUrl ? "Reemplazar Evidencia (PDF/Imagen)" : "Cargar Evidencia (PDF/Imagen)"}
-                            onUploadComplete={(storageId) => {
-                              updateItem({
-                                companyId: companyId as Id<"companies">,
-                                standardId: item.id,
-                                status: evaluation?.status || "No Cumple",
-                                fileStorageId: storageId
-                              });
-                            }}
-                          />
-                        </div>
-                        
-                        <div className="space-y-4">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Observaciones</label>
-                          <textarea 
-                            defaultValue={evaluation?.observation || ""}
-                            onBlur={async (e) => {
-                               await updateItem({
-                                 companyId: companyId as Id<"companies">,
-                                 standardId: item.id,
-                                 status: evaluation?.status || "No Cumple",
-                                 observation: e.target.value
-                               });
-                            }}
-                            className="w-full h-32 p-4 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
-                            placeholder="Ingrese detalles u observaciones..."
-                          />
-                        </div>
-                     </div>
-                     
-                     {item.requires_sub_items && (
-                        <div className="mt-8 p-6 bg-blue-50/50 rounded-2xl border border-blue-100">
-                           <div className="flex items-center gap-2 mb-4">
-                              <Info className="w-5 h-5 text-blue-600" />
-                              <h5 className="font-bold text-blue-900">Evidencias requeridas para Capacitación</h5>
-                           </div>
-                           <div className="grid md:grid-cols-3 gap-4">
-                              {[
-                                { id: "plan", label: "A. Plan de Capacitación" },
-                                { id: "asistencia", label: "B. Asistencia" },
-                                { id: "fotos", label: "C. Registro Fotográfico" }
-                              ].map((sub) => {
-                                 const subItem = evaluation?.subItems?.find(s => s.id === sub.id);
-                                 return (
-                                    <div key={sub.id} className="p-4 bg-white rounded-xl border border-blue-100">
-                                       <p className="text-xs font-bold text-slate-500 mb-2">{sub.label}</p>
-                                       {subItem?.fileStorageId ? (
-                                          <div className="flex items-center justify-between bg-green-50 p-2 rounded-lg">
-                                             <span className="text-[10px] font-bold text-green-700">SUBIDO</span>
-                                             <CheckCircle className="w-4 h-4 text-green-500" />
-                                          </div>
-                                       ) : (
-                                          <FileUploader 
-                                            onUploadComplete={async (storageId) => {
-                                               const currentSubItems = evaluation?.subItems || [];
-                                               const newSubItems = [
-                                                 ...currentSubItems.filter(s => s.id !== sub.id),
-                                                 { id: sub.id, fileStorageId: storageId }
-                                               ];
-                                               await updateItem({
-                                                 companyId: companyId as Id<"companies">,
-                                                 standardId: item.id,
-                                                 status: evaluation?.status || "No Cumple",
-                                                 // @ts-ignore - Need to update schema or handle array correctly
-                                                 subItems: newSubItems
-                                               });
-                                            }}
-                                          />
-                                       )}
-                                    </div>
-                                 );
-                              })}
-                           </div>
-                        </div>
-                     )}
-                  </div>
-                )}
+                <div>
+                  {activity.status === "Completada" ? (
+                    <span className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 font-bold text-sm rounded-full">
+                      <CheckCircle className="w-4 h-4" /> Actividad Completada
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 font-bold text-sm rounded-full">
+                      <Clock className="w-4 h-4" /> Pendiente
+                    </span>
+                  )}
+                </div>
               </div>
-            );
-          })}
-        </div>
 
-        {/* Otras Actividades Section */}
-        <div className="mt-12 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-           <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-             <FileText className="w-6 h-6 text-blue-600" />
-             Otras Actividades (Sin Puntaje)
-           </h3>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {["Actividades ARL", "Actividades MinTrabajo", "Actividades EPS", "Actividades AFP"].map((name) => (
-                <div key={name} className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                   <p className="text-sm font-bold text-slate-700 mb-4">{name}</p>
-                   <FileUploader onUploadComplete={() => {}} />
+              {activity.status === "Pendiente" ? (
+                <div className="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Observaciones</label>
+                    <textarea 
+                      rows={3}
+                      placeholder="Indique los detalles de ejecución de esta actividad..."
+                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none text-slate-900"
+                      value={observations[activity._id] || ""}
+                      onChange={e => setObservations({ ...observations, [activity._id]: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <FileUploader 
+                      label="Evidencia Requerida (PDF/IMG)" 
+                      onUploadComplete={(id) => setFileIds({ ...fileIds, [activity._id]: id })} 
+                    />
+                  </div>
+                  <div className="pt-2">
+                    <button 
+                      onClick={() => handleComplete(activity._id)}
+                      disabled={submitting[activity._id]}
+                      className="w-full md:w-auto px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-200 disabled:opacity-50"
+                    >
+                      {submitting[activity._id] ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                      Completar y Subir Evidencia
+                    </button>
+                  </div>
                 </div>
-              ))}
-           </div>
+              ) : (
+                <div className="space-y-4 pt-4 border-t border-green-100">
+                  {activity.completedAt && (
+                    <div className="mb-2">
+                      <span className="text-xs font-bold text-green-700 bg-green-50 px-3 py-2 rounded-lg inline-flex items-center gap-2">
+                        <Clock className="w-4 h-4" /> 
+                        Completada el: {new Date(activity.completedAt).toLocaleString("es-CO")}
+                      </span>
+                    </div>
+                  )}
+                  {activity.observations && (
+                    <div className="bg-white p-4 rounded-xl border border-green-100">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Observaciones Iniciales</p>
+                      <p className="text-sm text-slate-700">{activity.observations}</p>
+                    </div>
+                  )}
+                  {activity.fileUrl && (
+                    <div>
+                      <a 
+                        href={activity.fileUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-700 border border-green-200 font-bold rounded-xl hover:bg-green-50 transition-colors"
+                      >
+                        <FileText className="w-5 h-5" />
+                        Ver Evidencia Adjunta
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+          ))}
         </div>
       </div>
     </DashboardLayout>

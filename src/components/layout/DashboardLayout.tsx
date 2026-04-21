@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { 
@@ -16,21 +16,31 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils"; // I'll create this helper
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const user = useQuery(api.users.me);
+  const setRole = useMutation(api.users.setRole);
   const { signOut } = useAuthActions();
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  useEffect(() => {
+    if (user === null) {
+      router.push("/auth/login");
+    }
+  }, [user, router]);
+
+  const roleMap: Record<string, string> = {
+    admin: "Administrador",
+    advisor: "Asesor",
+    company: "Empresa",
+  };
+
   if (user === undefined) return <div className="min-h-screen bg-slate-50 animate-pulse" />;
-  if (user === null) {
-    router.push("/auth/login");
-    return null;
-  }
+  if (user === null) return null;
 
   const navItems = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -83,21 +93,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
           <div className="p-6 border-t border-slate-100">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
-                {user.name?.[0] || user.email?.[0]?.toUpperCase()}
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold uppercase overflow-hidden">
+                {user.name?.[0] || user.email?.[0] || "U"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 truncate">{user.name || "Usuario"}</p>
-                <p className="text-xs text-slate-500 truncate capitalize">{user.role}</p>
+                <p className="text-sm font-bold text-slate-900 truncate">
+                  {user.name || user.email?.split("@")[0] || "Usuario"}
+                </p>
+                <p className="text-xs text-slate-500 truncate font-medium">
+                  {user.role ? roleMap[user.role] || user.role : "Pendiente"}
+                </p>
               </div>
             </div>
-            <button
-              onClick={() => signOut()}
-              className="flex items-center gap-3 w-full px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Cerrar Sesión
-            </button>
+            <div className="flex gap-2 w-full">
+              <button
+                onClick={() => signOut()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Salir
+              </button>
+            </div>
           </div>
         </div>
       </aside>

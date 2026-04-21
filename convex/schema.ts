@@ -43,30 +43,15 @@ export default defineSchema({
   .index("by_advisor", ["advisorId"])
   .index("by_company", ["companyId"]),
 
-  // Standards are mostly static but we might store them to link evaluations
-  standards: defineTable({
-    groupId: v.number(), // 7, 21, 60
-    numeral: v.string(),
-    descripcion: v.string(),
-    requires_sub_items: v.boolean(),
-  }).index("by_group", ["groupId"]),
-
-  evaluations: defineTable({
-    companyId: v.id("companies"),
-    standardId: v.string(), // We'll link via our constant IDs or standardId if stored
-    status: v.union(v.literal("Cumple"), v.literal("No Cumple"), v.literal("No Aplica")),
-    observation: v.optional(v.string()),
-    fileStorageId: v.optional(v.id("_storage")),
-    // Sub-items for Capacitaciones
-    subItems: v.optional(v.array(v.object({
-      id: v.string(), // "plan", "asistencia", "fotos"
-      fileStorageId: v.id("_storage"),
-    }))),
-  }).index("by_company_standard", ["companyId", "standardId"]),
-
-  other_activities: defineTable({
-    companyId: v.id("companies"),
-    type: v.union(v.literal("ARL"), v.literal("MinTrabajo"), v.literal("EPS"), v.literal("AFP")),
-    fileStorageId: v.id("_storage"),
+  // Assigned Custom Activities
+  activities: defineTable({
+    companyId: v.id("companies"), // Assigned to this company
+    name: v.string(), // e.g. "Capacitar personal"
+    description: v.string(), // mandatory description
+    location: v.string(), // required location
+    status: v.union(v.literal("Pendiente"), v.literal("Completada")),
+    observations: v.optional(v.string()), // Advisor's text
+    fileStorageId: v.optional(v.id("_storage")), // Uploaded PDF
+    completedAt: v.optional(v.number()),
   }).index("by_company", ["companyId"]),
 });

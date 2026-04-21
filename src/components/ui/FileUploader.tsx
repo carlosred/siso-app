@@ -15,7 +15,7 @@ export function FileUploader({ onUploadComplete, label }: FileUploaderProps) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
-  const generateUploadUrl = useMutation(api.evaluations.generateUploadUrl);
+  const generateUploadUrl = useMutation(api.activities.generateUploadUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

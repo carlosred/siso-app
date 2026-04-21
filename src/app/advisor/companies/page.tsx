@@ -21,7 +21,7 @@ export default function AdvisorCompaniesPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Mis Empresas Asignadas</h1>
-          <p className="text-slate-500">Realice las evaluaciones de los estándares mínimos para sus empresas.</p>
+          <p className="text-slate-500">Gestione las actividades para sus empresas.</p>
         </div>
 
         {/* Search */}
@@ -52,7 +52,7 @@ export default function AdvisorCompaniesPage() {
 
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between items-center text-sm mb-1">
-                  <span className="text-slate-500 font-medium">Progreso Evaluación</span>
+                  <span className="text-slate-500 font-medium">Progreso Actividades</span>
                   <span className="text-blue-600 font-bold">--%</span>
                 </div>
                 <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
@@ -65,7 +65,7 @@ export default function AdvisorCompaniesPage() {
                 className="flex items-center justify-center gap-2 w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
               >
                 <ClipboardCheck className="w-5 h-5" />
-                Realizar Evaluación
+                Realizar Actividades
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
