@@ -16,31 +16,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<"admin" | "advisor" | "company">("company");
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Pending role to set after sign-up authenticates
-  const pendingRoleRef = useRef<"admin" | "advisor" | "company" | null>(null);
-
-  // Once authenticated and we have a pending role (from signUp), set it and redirect
   useEffect(() => {
-    if (isAuthenticated && pendingRoleRef.current) {
-      const roleToSet = pendingRoleRef.current;
-      pendingRoleRef.current = null;
-      setRole({ role: roleToSet })
-        .then(() => router.push("/dashboard"))
-        .catch((err) => {
-          console.error("Failed to set role:", err);
-          router.push("/dashboard");
-        });
-    } else if (isAuthenticated && user && !pendingRoleRef.current) {
-      // Already logged in - redirect
+    if (isAuthenticated && user) {
       router.push("/dashboard");
     }
-  }, [isAuthenticated, user, setRole, router]);
+  }, [isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,39 +32,19 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      if (flow === "signUp") {
-        // Store role before signing up so we can set it after auth propagates
-        pendingRoleRef.current = selectedRole;
-      }
-      await signIn("password", { email, password, flow });
-
-      if (flow === "signIn") {
-        router.push("/dashboard");
-      }
-      // For signUp, the useEffect above will handle redirect after setting role
+      await signIn("password", { email, password, flow: "signIn" });
+      router.push("/dashboard");
     } catch (err: unknown) {
-      pendingRoleRef.current = null;
       console.error("Auth error:", err);
       const message = err instanceof Error ? err.message : String(err);
-      if (message.includes("already exists") || message.includes("duplicate")) {
-        setError("Este correo ya está registrado. Por favor inicia sesión.");
-      } else if (message.includes("Invalid password") || message.includes("credentials")) {
+      if (message.includes("Invalid password") || message.includes("credentials")) {
         setError("Credenciales inválidas. Por favor intente de nuevo.");
       } else {
-        setError(
-          flow === "signIn"
-            ? "Credenciales inválidas. Por favor intente de nuevo."
-            : "El registro falló. Es posible que el correo ya esté en uso."
-        );
+        setError("Error al iniciar sesión. Por favor verifique sus datos.");
       }
     } finally {
       setLoading(false);
     }
-  };
-
-  const switchFlow = () => {
-    setFlow(flow === "signIn" ? "signUp" : "signIn");
-    setError(null);
   };
 
   return (
@@ -92,12 +56,10 @@ export default function LoginPage() {
             <ShieldCheck className="w-9 h-9 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            {flow === "signIn" ? "Bienvenido de nuevo" : "Crear una cuenta"}
+            Bienvenido de nuevo
           </h1>
           <p className="text-slate-500 mt-2 text-sm">
-            {flow === "signIn"
-              ? "Ingrese sus credenciales para acceder al sistema"
-              : "Complete los datos para registrarse en la plataforma"}
+            Ingrese sus credenciales para acceder al sistema
           </p>
         </div>
 
@@ -138,7 +100,7 @@ export default function LoginPage() {
                   className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-slate-900 placeholder:text-slate-400"
                   placeholder="••••••••"
                   required
-                  autoComplete={flow === "signIn" ? "current-password" : "new-password"}
+                  autoComplete="current-password"
                   minLength={8}
                 />
                 <button
@@ -150,35 +112,7 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {flow === "signUp" && (
-                <p className="text-xs text-slate-400 mt-1.5 ml-1">Mínimo 8 caracteres</p>
-              )}
             </div>
-
-            {/* Role selection for sign up */}
-            {flow === "signUp" && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Seleccione su Rol
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["company", "advisor", "admin"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setSelectedRole(r)}
-                      className={`py-2.5 px-1 text-xs font-bold rounded-xl border-2 transition-all ${
-                        selectedRole === r
-                          ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
-                          : "bg-white border-slate-200 text-slate-600 hover:border-blue-300 hover:bg-blue-50"
-                      }`}
-                    >
-                      {r === "admin" ? "🔑 Admin" : r === "advisor" ? "👷 Asesor" : "🏢 Empresa"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Error message */}
             {error && (
@@ -197,23 +131,15 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  {flow === "signIn" ? "Iniciando sesión..." : "Creando cuenta..."}
+                  Iniciando sesión...
                 </>
               ) : (
-                flow === "signIn" ? "Iniciar Sesión" : "Registrarse"
+                "Iniciar Sesión"
               )}
             </button>
           </form>
 
           <div className="mt-7 pt-6 border-t border-slate-100 text-center space-y-3">
-            <button
-              onClick={switchFlow}
-              className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors hover:underline"
-            >
-              {flow === "signIn"
-                ? "¿No tienes cuenta? Regístrate aquí"
-                : "¿Ya tienes cuenta? Inicia sesión"}
-            </button>
             <p className="text-[10px] text-slate-400">
               Protección SISO SAS — Sistema de Gestión de Seguridad y Salud en el Trabajo
             </p>

@@ -9,10 +9,13 @@
  */
 
 import type * as activities from "../activities.js";
+import type * as adminAuth from "../adminAuth.js";
 import type * as advisors from "../advisors.js";
 import type * as auth from "../auth.js";
 import type * as check from "../check.js";
 import type * as companies from "../companies.js";
+import type * as debug from "../debug.js";
+import type * as dump from "../dump.js";
 import type * as http from "../http.js";
 import type * as reset from "../reset.js";
 import type * as scratch from "../scratch.js";
@@ -27,10 +30,13 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   activities: typeof activities;
+  adminAuth: typeof adminAuth;
   advisors: typeof advisors;
   auth: typeof auth;
   check: typeof check;
   companies: typeof companies;
+  debug: typeof debug;
+  dump: typeof dump;
   http: typeof http;
   reset: typeof reset;
   scratch: typeof scratch;

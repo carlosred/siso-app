@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Plus, UserRound, Mail, BadgeCheck, Phone, Search, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 
 export default function AdminAdvisorsPage() {
   const advisors = useQuery(api.users.listAdvisors);
-  const createAdvisor = useMutation(api.advisors.create);
+  const createAdvisor = useAction(api.adminAuth.createAdvisorAccount);
   
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,7 +122,7 @@ export default function AdminAdvisorsPage() {
                 cedula: formData.cedula,
                 licencia: formData.licencia,
                 email: formData.email,
-                password: "Pending123!", // Dummy password for old mutation requirement
+                password: formData.password,
               });
               setIsModalOpen(false);
               setFormData({ nombre: "", apellido: "", cedula: "", licencia: "", email: "", password: "" });
@@ -140,7 +140,7 @@ export default function AdminAdvisorsPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-1">Nombre(s)</label>
               <input 
                 required type="text"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
                 value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})}
               />
             </div>
@@ -148,7 +148,7 @@ export default function AdminAdvisorsPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-1">Apellidos</label>
               <input 
                 required type="text"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
                 value={formData.apellido} onChange={e => setFormData({...formData, apellido: e.target.value})}
               />
             </div>
@@ -158,7 +158,7 @@ export default function AdminAdvisorsPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-1">Cédula</label>
               <input 
                 required type="text"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
                 value={formData.cedula} onChange={e => setFormData({...formData, cedula: e.target.value})}
               />
             </div>
@@ -166,18 +166,29 @@ export default function AdminAdvisorsPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-1">Licencia SST</label>
               <input 
                 required type="text"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
                 value={formData.licencia} onChange={e => setFormData({...formData, licencia: e.target.value})}
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Correo Electrónico (Login)</label>
-            <input 
-              required type="email"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-              value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Correo Electrónico (Login)</label>
+              <input 
+                required type="email"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
+                value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Asignar Contraseña</label>
+              <input 
+                required type="text" minLength={8}
+                placeholder="Mínimo 8 caracteres"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
+                value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})}
+              />
+            </div>
           </div>
 
           <div className="pt-4 flex gap-3">
@@ -190,7 +201,7 @@ export default function AdminAdvisorsPage() {
              </button>
           </div>
           <p className="text-xs text-slate-500 mt-2 text-center text-balance">
-            El asesor deberá registrarse en el portal con el <b>Correo Electrónico</b> proporcionado.
+            El asesor deberá iniciar sesión en el portal con el <b>Correo Electrónico</b> y la <b>Contraseña</b> proporcionados.
           </p>
         </form>
       </Modal>

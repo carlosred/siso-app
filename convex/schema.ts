@@ -51,7 +51,8 @@ export default defineSchema({
     location: v.string(), // required location
     status: v.union(v.literal("Pendiente"), v.literal("Completada")),
     observations: v.optional(v.string()), // Advisor's text
-    fileStorageId: v.optional(v.id("_storage")), // Uploaded PDF
+    fileStorageId: v.optional(v.id("_storage")), // Legacy single PDF
+    fileStorageIds: v.optional(v.array(v.id("_storage"))), // Uploaded PDFs (up to 3)
     completedAt: v.optional(v.number()),
   }).index("by_company", ["companyId"]),
 });

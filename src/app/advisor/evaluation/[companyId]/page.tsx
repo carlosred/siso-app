@@ -27,7 +27,7 @@ export default function CompanyActivitiesPage() {
 
   // States per activity row
   const [observations, setObservations] = useState<Record<string, string>>({});
-  const [fileIds, setFileIds] = useState<Record<string, Id<"_storage">>>({});
+  const [fileIds, setFileIds] = useState<Record<string, Id<"_storage">[]>>({});
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
 
   if (!assignments || !activities) {
@@ -52,10 +52,10 @@ export default function CompanyActivitiesPage() {
 
   const handleComplete = async (activityId: string) => {
     const obs = observations[activityId] || "";
-    const fileId = fileIds[activityId];
+    const ids = fileIds[activityId] || [];
     
-    if (!fileId) {
-      alert("Para completar la actividad debe adjuntar la Evidencia (Subir Archivo).");
+    if (ids.length === 0) {
+      alert("Para completar la actividad debe adjuntar al menos 1 Evidencia (Subir Archivo).");
       return;
     }
 
@@ -64,7 +64,7 @@ export default function CompanyActivitiesPage() {
       await completeActivity({
         activityId: activityId as Id<"activities">,
         observations: obs,
-        fileStorageId: fileId
+        fileStorageIds: ids
       });
       alert("¡Actividad completada y enviada a la Empresa exitosamente!");
     } catch (err) {
@@ -133,11 +133,26 @@ export default function CompanyActivitiesPage() {
                       onChange={e => setObservations({ ...observations, [activity._id]: e.target.value })}
                     />
                   </div>
-                  <div>
-                    <FileUploader 
-                      label="Evidencia Requerida (PDF/IMG)" 
-                      onUploadComplete={(id) => setFileIds({ ...fileIds, [activity._id]: id })} 
-                    />
+                  <div className="space-y-3">
+                    <label className="block text-sm font-bold text-slate-700">Evidencias Requeridas (PDF/IMG - Máx 3)</label>
+                    <div className="grid gap-3">
+                      {(fileIds[activity._id] || []).map((id, index) => (
+                        <div key={id} className="flex items-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 font-bold rounded-xl border border-blue-200 shadow-sm">
+                          <CheckCircle className="w-5 h-5 text-blue-600 shrink-0" />
+                          <span>Evidencia {index + 1} adjunta correctamente</span>
+                        </div>
+                      ))}
+                      {(!fileIds[activity._id] || fileIds[activity._id].length < 3) && (
+                        <FileUploader 
+                          key={`uploader-${activity._id}-${fileIds[activity._id]?.length || 0}`}
+                          label={`Subir Evidencia ${(!fileIds[activity._id] ? 0 : fileIds[activity._id].length) + 1}`} 
+                          onUploadComplete={(id) => setFileIds({ 
+                            ...fileIds, 
+                            [activity._id]: [...(fileIds[activity._id] || []), id] 
+                          })} 
+                        />
+                      )}
+                    </div>
                   </div>
                   <div className="pt-2">
                     <button 
@@ -166,13 +181,30 @@ export default function CompanyActivitiesPage() {
                       <p className="text-sm text-slate-700">{activity.observations}</p>
                     </div>
                   )}
-                  {activity.fileUrl && (
+                  {activity.fileUrls && activity.fileUrls.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {activity.fileUrls.map((url: string, i: number) => (
+                        <a 
+                          key={i}
+                          href={url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-700 border border-green-200 font-bold rounded-xl hover:bg-green-50 transition-colors shadow-sm"
+                        >
+                          <FileText className="w-5 h-5" />
+                          Ver Evidencia {i + 1}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {/* Legacy support */}
+                  {(activity as any).fileUrl && (!activity.fileUrls || activity.fileUrls.length === 0) && (
                     <div>
                       <a 
-                        href={activity.fileUrl} 
+                        href={(activity as any).fileUrl} 
                         target="_blank" 
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-700 border border-green-200 font-bold rounded-xl hover:bg-green-50 transition-colors"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white text-green-700 border border-green-200 font-bold rounded-xl hover:bg-green-50 transition-colors shadow-sm"
                       >
                         <FileText className="w-5 h-5" />
                         Ver Evidencia Adjunta

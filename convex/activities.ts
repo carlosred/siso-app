@@ -63,13 +63,23 @@ export const getByCompany = query({
     // Map file storage IDs to actual URLs if they exist
     return await Promise.all(
       activities.map(async (activity) => {
-        let fileUrl = null;
-        if (activity.fileStorageId) {
-          fileUrl = await ctx.storage.getUrl(activity.fileStorageId);
+        let fileUrls: string[] = [];
+        // Legacy support
+        if ((activity as any).fileStorageId) {
+          const url = await ctx.storage.getUrl((activity as any).fileStorageId);
+          if (url) fileUrls.push(url);
         }
+        // New array support
+        if (activity.fileStorageIds && activity.fileStorageIds.length > 0) {
+          for (const id of activity.fileStorageIds) {
+            const url = await ctx.storage.getUrl(id);
+            if (url) fileUrls.push(url);
+          }
+        }
+        
         return {
           ...activity,
-          fileUrl,
+          fileUrls,
           advisorName: advisorText
         };
       })
@@ -81,7 +91,7 @@ export const complete = mutation({
   args: {
     activityId: v.id("activities"),
     observations: v.string(),
-    fileStorageId: v.id("_storage")
+    fileStorageIds: v.array(v.id("_storage"))
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -95,7 +105,7 @@ export const complete = mutation({
     await ctx.db.patch(args.activityId, {
       status: "Completada",
       observations: args.observations,
-      fileStorageId: args.fileStorageId,
+      fileStorageIds: args.fileStorageIds,
       completedAt: Date.now()
     });
   }

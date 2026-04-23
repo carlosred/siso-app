@@ -1,6 +1,25 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+
+export const internalCreateProfile = internalMutation({
+  args: {
+    userId: v.id("users"),
+    nombre: v.string(),
+    apellido: v.string(),
+    cedula: v.string(),
+    licencia: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("advisors", {
+      userId: args.userId,
+      nombre: args.nombre,
+      apellido: args.apellido,
+      cedula: args.cedula,
+      licencia: args.licencia,
+    });
+  },
+});
 
 export const create = mutation({
   args: {

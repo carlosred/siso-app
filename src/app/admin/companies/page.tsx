@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Plus, Search, Building2, MapPin, Users as UsersIcon, AlertTriangle, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -11,7 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 export default function AdminCompaniesPage() {
   const companies = useQuery(api.companies.list);
   const advisors = useQuery(api.users.listAdvisors);
-  const createCompany = useMutation(api.companies.create);
+  const createCompany = useAction(api.adminAuth.createCompanyAccount);
   const assignAdvisor = useMutation(api.advisors.assignToCompany);
   const createActivity = useMutation(api.activities.create);
   
@@ -184,7 +184,7 @@ export default function AdminCompaniesPage() {
                 riesgo: parseInt(formData.riesgo, 10),
                 correo: formData.correo,
                 direccion: formData.direccion,
-                password: "Pending123!", // Must provide default so mutation logic executes smoothly
+                password: formData.password,
               });
               setIsModalOpen(false);
               setFormData({ razon_social: "", nit: "", numero_trabajadores: "", riesgo: "1", correo: "", direccion: "", password: "" });
@@ -243,13 +243,24 @@ export default function AdminCompaniesPage() {
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Dirección</label>
-            <input 
-              required type="text"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
-              value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Dirección</label>
+              <input 
+                required type="text"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
+                value={formData.direccion} onChange={e => setFormData({...formData, direccion: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Asignar Contraseña</label>
+              <input 
+                required type="text" minLength={8}
+                placeholder="Mínimo 8 caracteres"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900"
+                value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})}
+              />
+            </div>
           </div>
           <div className="pt-4 flex gap-3">
              <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200">
@@ -431,7 +442,30 @@ export default function AdminCompaniesPage() {
                 <div className="text-sm text-slate-600 mb-1"><span className="font-semibold">Lugar:</span> {activity.location}</div>
                 <div className="text-sm text-slate-600 mb-1"><span className="font-semibold">Asesor Asignado:</span> {activity.advisorName}</div>
                 {activity.completedAt && (
-                   <div className="text-sm text-slate-600"><span className="font-semibold">Completada el:</span> {new Date(activity.completedAt).toLocaleString("es-CO")}</div>
+                   <div className="text-sm text-slate-600 mb-2"><span className="font-semibold">Completada el:</span> {new Date(activity.completedAt).toLocaleString("es-CO")}</div>
+                )}
+                {activity.fileUrls && activity.fileUrls.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {activity.fileUrls.map((url: string, i: number) => (
+                      <a 
+                        key={i} href={url} target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-white text-green-700 border border-green-200 text-xs font-bold rounded-lg hover:bg-green-50 shadow-sm"
+                      >
+                        Ver Evidencia {i + 1}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {/* Legacy support */}
+                {(activity as any).fileUrl && (!activity.fileUrls || activity.fileUrls.length === 0) && (
+                  <div className="mt-2 text-sm">
+                    <a 
+                      href={(activity as any).fileUrl} target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-white text-green-700 border border-green-200 text-xs font-bold rounded-lg hover:bg-green-50 shadow-sm"
+                    >
+                      Ver Evidencia Adjunta
+                    </a>
+                  </div>
                 )}
               </div>
             ))
