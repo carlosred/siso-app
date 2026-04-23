@@ -183,17 +183,40 @@ export default function CompanyDashboardPage() {
                          )}
                        </div>
                        
-                       <div className="flex items-center md:items-start justify-end shrink-0 md:w-48 ml-8 md:ml-0 mt-2 md:mt-0">
-                         {activity.status === "Completada" && activity.fileUrl ? (
-                           <a 
-                             href={activity.fileUrl}
-                             target="_blank"
-                             rel="noreferrer" 
-                             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 transition-colors border border-blue-100"
-                           >
-                             <FileText className="w-5 h-5" />
-                             Descargar
-                           </a>
+                       <div className="flex flex-col md:flex-row items-center md:items-start justify-end shrink-0 gap-2 ml-8 md:ml-0 mt-2 md:mt-0 flex-wrap">
+                         {activity.status === "Completada" ? (
+                           <>
+                             {activity.fileUrls && activity.fileUrls.length > 0 && (
+                               activity.fileUrls.map((url: string, i: number) => (
+                                 <a 
+                                   key={i}
+                                   href={url}
+                                   target="_blank"
+                                   rel="noreferrer" 
+                                   className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 transition-colors border border-blue-100"
+                                 >
+                                   <FileText className="w-5 h-5" />
+                                   PDF {i + 1}
+                                 </a>
+                               ))
+                             )}
+                             {(activity as any).fileUrl && (!activity.fileUrls || activity.fileUrls.length === 0) && (
+                               <a 
+                                 href={(activity as any).fileUrl}
+                                 target="_blank"
+                                 rel="noreferrer" 
+                                 className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 font-bold rounded-xl hover:bg-blue-100 transition-colors border border-blue-100"
+                               >
+                                 <FileText className="w-5 h-5" />
+                                 Descargar
+                               </a>
+                             )}
+                             {(!activity.fileUrls || activity.fileUrls.length === 0) && !(activity as any).fileUrl && (
+                               <div className="text-center px-4 py-3 bg-slate-100 text-slate-400 font-bold rounded-xl border border-slate-200">
+                                 Sin Archivos
+                               </div>
+                             )}
+                           </>
                          ) : (
                            <div className="w-full text-center px-4 py-3 bg-slate-100 text-slate-400 font-bold rounded-xl border border-slate-200">
                              En Proceso
