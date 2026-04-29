@@ -62,10 +62,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}>
         <div className="flex flex-col h-full">
           <div className="p-6 flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-xl">
-              <ShieldCheck className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-bold text-slate-900 tracking-tight">PROTECCION SISO</span>
+            <img src="/logo.jpeg" alt="Protección SISO" className="h-12 w-auto object-contain" />
           </div>
 
           <nav className="flex-1 px-4 space-y-2">

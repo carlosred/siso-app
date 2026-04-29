@@ -52,8 +52,8 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         {/* Logo & Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center p-4 bg-blue-600 rounded-2xl mb-5 shadow-xl shadow-blue-300/40">
-            <ShieldCheck className="w-9 h-9 text-white" />
+          <div className="flex justify-center mb-5">
+            <img src="/logo.jpeg" alt="Protección SISO" className="h-20 w-auto object-contain drop-shadow-md" />
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Bienvenido de nuevo
