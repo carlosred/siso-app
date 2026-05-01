@@ -13,12 +13,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <ShieldCheck className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900">
-            PROTECCION <span className="text-blue-600">SISO</span>
-          </span>
+          <img src="/logo.png" alt="Protección SISO" className="h-12 w-auto object-contain" />
         </div>
         <div className="flex items-center gap-4">
           {isLoading ? (
@@ -67,9 +62,8 @@ export default function LandingPage() {
             </div>
             <div className="relative">
               <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-white/50">
-                 {/* Placeholder for SG-SST image */}
-                 <div className="bg-blue-100 aspect-video flex items-center justify-center">
-                    <ShieldCheck className="w-32 h-32 text-blue-400 opacity-50" />
+                 <div className="bg-white aspect-video flex items-center justify-center p-8">
+                    <img src="/logo.png" alt="Protección SISO" className="w-full h-full object-contain drop-shadow-sm" />
                  </div>
               </div>
               <div className="absolute -top-6 -right-6 w-32 h-32 bg-blue-600/5 blur-3xl rounded-full" />
@@ -143,8 +137,7 @@ export default function LandingPage() {
       <footer className="py-12 border-t border-slate-100 px-6">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-blue-600" />
-            <span className="font-bold">PROTECCION SISO SAS</span>
+            <img src="/logo.png" alt="Protección SISO" className="h-8 w-auto object-contain grayscale opacity-70" />
           </div>
           <p className="text-sm text-slate-500">
             © 2024 PROTECCION SISO SAS. Todos los derechos reservados.

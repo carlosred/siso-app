@@ -32,6 +32,7 @@ export const createCompanyAccount = action({
       profile: {
         role: "company",
         name: args.razon_social,
+        email: args.correo,
       },
     });
 
@@ -68,6 +69,7 @@ export const createAdvisorAccount = action({
       profile: {
         role: "advisor",
         name: `${args.nombre} ${args.apellido}`,
+        email: args.email,
       },
     });
 

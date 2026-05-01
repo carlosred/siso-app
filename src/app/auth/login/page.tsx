@@ -53,7 +53,7 @@ export default function LoginPage() {
         {/* Logo & Header */}
         <div className="text-center mb-10">
           <div className="flex justify-center mb-5">
-            <img src="/logo.jpeg" alt="Protección SISO" className="h-20 w-auto object-contain drop-shadow-md" />
+            <img src="/logo.png" alt="Protección SISO" className="h-20 w-auto object-contain drop-shadow-md" />
           </div>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Bienvenido de nuevo
